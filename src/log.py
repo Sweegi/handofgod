@@ -4,7 +4,9 @@ Author: Sweegi
 Logging
 
 """
+import io
 import os
+import sys
 
 import logging
 from logging import StreamHandler
@@ -19,7 +21,8 @@ def getLogger(level='INFO'):
 
     if not os.path.isdir(LOG_DIR): os.mkdir('./logs')
 
-    file_handler = TimedRotatingFileHandler(os.path.join(LOG_DIR, 'record.log'), when='midnight')
+    log_file = os.path.join(LOG_DIR, 'record.log')
+    file_handler = TimedRotatingFileHandler(log_file, encoding='utf-8', when='midnight')
     file_handler.setFormatter(fmt)
     logger.addHandler(file_handler)
 

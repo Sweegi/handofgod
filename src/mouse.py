@@ -5,7 +5,7 @@ Author Sweegi
 
 """
 
-
-def oneclick():
+# 单击
+def click():
     pass
 

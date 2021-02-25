@@ -27,23 +27,26 @@ def loadconf():
     return _conf_data
 
 def start():
-    logger.info('*** 程序启动，请根据提示操作 ***\n')
+    logger.info('*** Programming Start! Please follow the hint! ***\n')
     try:
         conf = loadconf()
         _wait()
 
         win = {}
         for game, task in conf.items():
-            print('请确认%s监控窗口' % game)
+            print('- Step 1 - Select the current [%s] window' % game)
             for w in screen.select_window():
-                k = input('%s > (y or n): ' % w)
+                k = input('%s > (input y or n): ' % w)
                 if k.lower() != 'y': continue
 
                 win[game] = w
-                logger.warning('%s 已选择窗口: %s' % (game, w))
+                _wait()
+                _enter_line()
+                logger.info('[%s] selected: %s\n' % (game, w))
                 break
 
-        logger.debug('开始识别 ... ')
+        _wait()
+        logger.debug('- Step 2 - Begin to scanning ... ')
         while True:
             for game, task in conf.items():
                 win_id = win.get(game)
@@ -62,17 +65,21 @@ def start():
                         _target, _action = _conf.get('action').split(':')
                         if _target == 'mouse':
                             getattr(mouse, _action)()
-                            logger.info('%s %s' % (_action, _txt))
+                            logger.info('%s %s' % (_action, _))
                         else:
-                            logger.info('不支持的action: %s' % _conf.get('action'))
+                            logger.info('No Support for Action: %s' % _conf.get('action'))
                     except AssertionError as e:
                         continue
             _wait()
 
     finally:
-        logger.info('*** 程序结束 ***')
+        _enter_line()
+        logger.info('*** Over! ***')
         _wait(2)
         sys.exit(0)
+
+def _enter_line():
+    print(' ')
 
 def _wait(sec=0.5):
     time.sleep(sec)
@@ -83,4 +90,4 @@ def _start_thread(func, args, deamon=True):
     t.start()
 
 if __name__ == '__main__':
-    start()
+     start()
