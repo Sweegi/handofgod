@@ -12,8 +12,7 @@ def recognize_text(img, txt=None):
 
     text = pytesseract.image_to_string(img, lang='chi_sim')
 
-    print('Img len: %d' % len(text))
-    print(text)
+    print('Img len: %d, text: "%s"' % (len(text), text))
 
 # 识别底色
 def recognize_color(img, color):
@@ -22,10 +21,11 @@ def recognize_color(img, color):
 
 if __name__ == '__main__':
 
-    img_1 = 'E://handofgod/src/images/1.png'
-    img_2 = 'E://handofgod/src/images/2.png'
-    img_3 = 'E://handofgod/src/images/3.png'
-    t1 = 'E://handofgod/src/images/t1.jpg'
-    t2 = 'E://handofgod/src/images/t2.jpg'
+    img = 'E://handofgod/src/temp.jpeg'
+    recognize_text(Image.open(img))
 
-    recognize_text(t2)
+    img = 'E://handofgod/src/temp1.jpeg'
+    recognize_text(Image.open(img))
+
+    img = 'E://handofgod/src/temp0.jpeg'
+    recognize_text(Image.open(img))
