@@ -20,7 +20,7 @@ def enum_windows(name):
         if not _win_txt: continue
 
         _win_clsname = win32gui.GetClassName(_win_id)
-        if _win_txt.find(name) < 0: continue
+        if name and _win_txt.find(name) < 0: continue
 
         winlist.append({'id': _win_id, 'title': _win_txt, 'clsname': _win_clsname})
 
@@ -35,63 +35,24 @@ def set_window_to_top(win_obj):
     win32gui.SetForegroundWindow(win_obj)  #show window
 
 # 窗口识别区域捕获 
-def capture(win_obj, start_x, start_y, width, height):
-    print(start_x, start_y, width, height)
-
-    _start_x = int(start_x)
-    _start_y = int(start_y)
-    _width = int(width)
-    _height = int(height)
-
+def capture(win_obj, start_x, start_y, end_x, end_y):
+    # 窗口大小
     r = win32gui.GetWindowRect(win_obj)
-    print(r)
-    left, top, right, bottom = r
+    left, top, right, bot = r
 
-    # set_window_to_top(win_obj)
-    # time.sleep(0.1)
+    pic = ImageGrab.grab(bbox=(start_x, start_y, end_x, end_y))
+    pic.save('orginal.jpg', quality=95, subsampling=0)
 
-    win_dc = win32gui.GetWindowDC(263098)
+    ocr_pic_fn = './new.jpg'
+    binarize(pic, ocr_pic_fn)
 
-    # 图片最左边距离主屏左上角的水平距离
-    left = win32api.GetSystemMetrics(win32con.SM_XVIRTUALSCREEN)
-    print(left)
-    # 图片最上边距离主屏左上角的垂直距离
-    top = win32api.GetSystemMetrics(win32con.SM_YVIRTUALSCREEN)
-    print(top)
-
-    # win_dc = win32gui.GetWindowDC(win_obj)
-    srcdc = win32ui.CreateDCFromHandle(win_dc)
-    memdc = srcdc.CreateCompatibleDC()
-
-    bmp = win32ui.CreateBitmap()
-    # bmp.CreateCompatibleBitmap(srcdc, _width, _height)
-    bmp.CreateCompatibleBitmap(srcdc, r[2] - r[0], r[3] - r[1])
-
-    memdc.SelectObject(bmp)
-    # memdc.BitBlt((0, 0), (_width, _height), srcdc, (left, top), win32con.SRCCOPY)
-    memdc.BitBlt((0,0), (r[2], r[3] - top), srcdc, (left, top), win32con.SRCCOPY)
-
-    bmpFileName = 'screenshot.bmp'
-    bmp.SaveBitmapFile(memdc, bmpFileName)
-
-    # im = ImageGrab.grab((start_x, start_y, end_x, end_y))
-    # im.save('temp0.jpeg', format='jpeg')
-
-    # _img_black = _point(im)
-
-    # return im, _img_black
-
-    memdc.DeleteDC()
-    srcdc.DeleteDC()
+    return ocr_pic_fn
 
 # 二值化
-def _point(img):
-    # 二值化
+def binarize(img, filename):
     _img = img.convert('L')
-    _img.save('temp1.jpeg', format='jpeg')
 
-    threshold = 200 
-    threshold = 210 
+    threshold = 200
 
     table = []
     for i in range(256):
@@ -101,7 +62,7 @@ def _point(img):
             table.append(1)
 
     _img_black = _img.point(table, '1')
-    _img_black.save('temp.jpeg', format='jpeg')
+    _img_black.save(filename, quality=95, subsampling=0)
 
 class CTkPrScrn:
     def __init__(self, startX=0, startY=0):
@@ -149,6 +110,7 @@ class CTkPrScrn:
             return
 
         self.__end_x, self.__end_y = event.x, event.y
+        print('x:', event.x, ', y:', event.y)
         # im = ImageGrab.grab((self.__scale * self.__start_x, self.__scale * self.__start_y,
                                 # self.__scale * event.x, self.__scale * event.y))
         # imgName = 'tmp.png'
@@ -193,51 +155,52 @@ class CTkPrScrn:
     def height(self):
         return self.__scale * self.__height
 
-def window_capture(win):
+# def window_capture(win):
 
-    print(win)
-    # wind = win32gui.FindWindow(win.get('id'), None)
-    win_id = win.get('id')
+#     print(win)
+#     # wind = win32gui.FindWindow(win.get('id'), None)
+#     win_id = win.get('id')
 
-    # 窗口大小
-    r = win32gui.GetWindowRect(win_id)
-    print(r)
-    left, top, right, bot = r
+#     # 窗口大小
+#     r = win32gui.GetWindowRect(win_id)
+#     print(r)
+#     left, top, right, bot = r
 
-    width = right - left
-    height = bot - top
-    print(width, height)
+#     width = right - left
+#     height = bot - top
+#     print(width, height)
 
-    # 根据窗口句柄获取窗口的设备上下文DC（Divice Context）
-    hwin = win32gui.GetWindowDC(win_id)
+#     # 根据窗口句柄获取窗口的设备上下文DC（Divice Context）
+#     hwin = win32gui.GetWindowDC(win_id)
 
-    # 图片最左边距离主屏左上角的水平距离
-    left = win32api.GetSystemMetrics(win32con.SM_XVIRTUALSCREEN)
-    # 图片最上边距离主屏左上角的垂直距离
-    top = win32api.GetSystemMetrics(win32con.SM_YVIRTUALSCREEN)
+#     # 图片最左边距离主屏左上角的水平距离
+#     left = win32api.GetSystemMetrics(win32con.SM_XVIRTUALSCREEN)
+#     # 图片最上边距离主屏左上角的垂直距离
+#     top = win32api.GetSystemMetrics(win32con.SM_YVIRTUALSCREEN)
 
-    srcdc = win32ui.CreateDCFromHandle(hwin)
-    memdc = srcdc.CreateCompatibleDC()
+#     srcdc = win32ui.CreateDCFromHandle(hwin)
+#     memdc = srcdc.CreateCompatibleDC()
 
-    bmp = win32ui.CreateBitmap()
-    bmp.CreateCompatibleBitmap(srcdc, r[2] - r[0], r[3] - r[1])
+#     bmp = win32ui.CreateBitmap()
+#     bmp.CreateCompatibleBitmap(srcdc, r[2] - r[0], r[3] - r[1])
 
-    memdc.SelectObject(bmp)
-    memdc.BitBlt((-r[0], top - r[1]), (r[2], r[3] - top), srcdc, (left, top), win32con.SRCCOPY)
+#     memdc.SelectObject(bmp)
+#     memdc.BitBlt((-r[0], top - r[1]), (r[2], r[3] - top), srcdc, (left, top), win32con.SRCCOPY)
 
-    bmpFileName = 'screenshot.bmp'
-    bmp.SaveBitmapFile(memdc, bmpFileName)
+#     bmpFileName = 'screenshot.bmp'
+#     bmp.SaveBitmapFile(memdc, bmpFileName)
 
-    memdc.DeleteDC()
-    srcdc.DeleteDC()
+#     memdc.DeleteDC()
+#     srcdc.DeleteDC()
 
 if __name__ == '__main__':
-    # img = Image.open("E://handofgod/src/temp0.jpeg")
-    # _point(img)
+    img = Image.open("E://handofgod/src/orginal.jpg")
+    print(type(img))
 
-    win_dict = {'id': 263098, 'title': 'Photos', 'clsname': 'ApplicationFrameWindow'}
+    # win_dict = {'id': 12518504, 'title': 'E:\\handofgod\\src\\images\\1.png - Internet Explorer', 'clsname': 'IEFrame'}
     # win_dict = {'id': 656514, 'title': 'New tab - Personal - Microsoft\u200b Edge', 'clsname': 'Chrome_WidgetWin_1'}
-    win_obj = get_window(win_dict)
+    # win_obj = get_window(win_dict)
     # capture(win_obj, 769.0, 498.0, 1674.0, 1222.0)
-    # capture(win_obj, 0, 0, 100, 100)
-    window_capture(win_dict)
+    # set_window_to_top(win_obj)
+    # capture(win_obj, 83, 64, 1112, 735)
+    # window_capture(win_dict)

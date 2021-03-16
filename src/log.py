@@ -27,8 +27,9 @@ def getLogger(level='INFO'):
     logger.addHandler(file_handler)
 
     stream_handler = StreamHandler()
-    _fmt = logging.Formatter('%(message)s')
-    stream_handler.setFormatter(_fmt)
+    # _fmt = logging.Formatter('%(message)s')
+    # stream_handler.setFormatter(_fmt)
+    stream_handler.setFormatter(fmt)
     logger.addHandler(stream_handler)
 
     logger.setLevel(getattr(logging, level))

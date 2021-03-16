@@ -75,7 +75,8 @@ def _func(window_name, title, repeat):
         logger.info('- Step 3 - 开始扫描 ... ')
         while True:
             # _img, _img_black = screen.capture(_current_win, sc.start_x, sc.start_y, sc.end_x, sc.end_y)
-            screen.capture(_current_win, sc.start_x, sc.start_y, sc.width, sc.height)
+            screen.set_window_to_top(_current_win)
+            _img = screen.capture(_current_win, sc.start_x, sc.start_y, sc.end_x, sc.end_y)
 
             for _, _conf in repeat.items():
                 try:
@@ -84,14 +85,16 @@ def _func(window_name, title, repeat):
                         assert ocr.recognize_text(_img, _txt)
 
                     '''
-                    _color = _conf.get('color')
-                    if _color:
-                        assert ocr.recognize_color(_img, _color)
+                    if _ == 'end_fishing':
+                        _color = _conf.get('color')
+                        if _color:
+                            assert ocr.recognize_color(_img, _color)
                     '''
 
                     _target, _action = _conf.get('action').split(':')
                     if _target == 'mouse':
-                        getattr(mouse, _action)()
+                        _x, _y = mouse.getClickLocation(sc.start_x, sc.start_y, sc.end_x, sc.end_y)
+                        getattr(mouse, _action)(_x, _y)
                         logger.info('%s %s' % (_action, _))
                     else:
                         logger.info('No Support for Action: %s' % _conf.get('action'))
