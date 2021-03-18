@@ -33,109 +33,163 @@ def start():
         conf = loadconf()
         _wait()
 
-        win = {}
         # multi-process
-        window_name = conf.get('window_name')
-        print(conf)
+        window_name = conf.get('name')
 
-        _func(window_name, conf)
+        # 选择窗口
+        logger.info('- Step 1 - 选择当前游戏窗口, 请输入 y or n :\n')
+        win_obj = _select_window(window_name)
+        if win_obj is None: return
+        logger.info('窗口选择成功!\n')
+
+        # 定位按钮位置
+        logger.info('- Step 2 - 使用鼠标选择监视区域 ... ')
+        screen.set_window_to_top(win_obj)
+        sc = screen.CTkPrScrn() # absolute position for window
+
+        # 主窗口的绝对定位 
+        _location = (sc.start_x, sc.start_y, sc.end_x, sc.end_y)
+        # TODO 窗口相对位置
+        # 点击位置
+        _click_x, _click_y = mouse.getClickLocation(_location)
+
+        logger.info('- Step 3 - 开始扫描 ( 第一次识别比较耗时，请不要切换游戏视角或调整游戏窗口 ) ... ')
+
+        # 获得抛竿&提竿图片二值化步长值
+        _pg_threshold, _tg_threshold = _find_threshold(win_obj, conf, _click_x, _click_y, _location)
+        if _pg_threshold is None or _tg_threshold is None:
+            logger.info('- Step 4 - 扫描失败，请重试')
+            return
+
+        logger.info('pg threshold: %d, tg_threshold: %d' % (_pg_threshold, _tg_threshold))
+        logger.info('- Step 4 - 扫描完毕')
+
+        conf['pg']['threshold'] = _pg_threshold
+        conf['tg']['threshold'] = _tg_threshold
+
+        logging.info(conf)
+        logger.info('- Step 5 - 执行开始')
+        _run(win_obj, conf, _click_x, _click_y, _location)
+
+    except Exception as e:
+        logger.error('[Error] ', traceback.format_exc())
     finally:
         _enter_line()
         logger.info('*** Over! ***')
         _wait(2)
         sys.exit(0)
 
-def _func(window_name, conf):
-    try:
-        # 游戏窗口
-        _current_win = None
-        
-        logger.info('- Step 1 - 选择当前游戏窗口, 请输入 y or n :\n')
-        winlist = screen.enum_windows(window_name)
-        for w in winlist:
-            k = input('   窗口名: %s > ' % w.get('title'))
-            if k.lower() != 'y': continue
+def _select_window(window_name):
+    # 游戏窗口
+    _current_win = None
 
-            _current_win = screen.get_window(w)
-            _enter_line()
-            logger.info('窗口选择成功!\n')
-            _wait()
-            break
+    winlist = screen.enum_windows(window_name)
 
-        if not _current_win: return
+    for w in winlist:
+        k = input('   窗口名: %s > ' % w.get('title'))
+        if k.lower() != 'y': continue
 
-        logger.info('- Step 2 - 使用鼠标选择监视区域 ... ')
+        _current_win = screen.get_window(w)
+        _enter_line()
         _wait()
+        break
+    return _current_win
 
-        screen.set_window_to_top(_current_win)
-        sc = screen.CTkPrScrn() # absolute position for window
+def _find_threshold(win, conf, click_x, click_y, location):
+    # 图片二值化步长值
+    pg_threshold = tg_threshold = None
+   
+    pg = conf.get('pg')
+    tg = conf.get('tg')
+        
+    pg_txt = pg.get('text')
+    tg_txt = tg.get('text')
+    tg_color = tg.get('color')
 
-        logger.info('- Step 3 - 开始扫描 ( 第一次识别比较耗时，请不要切换游戏视角或调整游戏窗口 ) ... ')
+    while True:
+        logger.info('等待 %s...' % pg_txt)
+        _img = screen.capture(win, location)
 
-        # 图片二值化步长初始值
-        start_threshold = 200
-        end_threshold = 240
+        for i in range(pg.get('threshold'), 256):
+            if ocr.recognize_text(_img, pg_txt, i):
+                pg_threshold = i
+                _img.save('./images/pg.jpg')
+                #TODO sum
+                logger.info('识别%s'%pg_txt)
+                mouse.click(click_x, click_y)
+                break
 
-        # 初次识别标志位
-        first_flag = True 
+        if pg_threshold is None: continue
 
-        # 点击位置
-        _x, _y = mouse.getClickLocation(sc.start_x, sc.start_y, sc.end_x, sc.end_y)
-
+        _times = 0
         while True:
-            logger.info('wait 抛竿...')
-            _img = screen.capture(_current_win, sc.start_x, sc.start_y, sc.end_x, sc.end_y)
-            _img.save('./images/pg1.jpg')
+            # 记录次数，超出 1分钟，约 600 次，跳出循环
+            if _times > 100: break
+            _times += 1
 
-            logger.info('recognizing start ...')
-            s_res = ocr.recognize_text(_img, '抛竿', start_threshold)
-            logger.info('recognizing end ...')
-            if s_res is not None:
-                # mouse.click(_x, _y)
-                logger.info('click 抛竿 x: %d, y: %d' % (_x, _y))
-                if first_flag:
-                    _img.save('./images/pg.jpg')
-                    # 更新抛竿二值化步长
-                    start_threshold = s_res
-                    logger.info('start threshold: %d' % s_res)
+            _img2 = screen.capture(win, location)
 
-                # 记录次数，超出2分钟，约1200次，跳出循环
-                # _times = 0
-                # logger.info('wait 提竿...')
-                # while _times < 1200:
-                #     _times += 1
+            if ocr.recognize_color(_img2, tg_color) == False:
+                _wait(0.1)
+                continue
 
-                #     _img2 = screen.capture(_current_win, sc.start_x, sc.start_y, sc.end_x, sc.end_y)
+            logger.info('等待 %s...' % tg_txt)
+            _img2.save('./images/tg.jpg')
+            for j in range(tg.get('threshold'), 256):
+                if ocr.recognize_text(_img, pg.get('text'), j):
+                    tg_threshold = j
+                    #TODO sum
+                    logger.info('识别%s'%tg_txt)
+                    break
 
-                #     _check_color = ocr.recognize_color(_img2, "152-179,188-231,95-128")
-                #     if _check_color == False:
-                #         _wait(0.1)
-                #         continue
+            if tg_threshold is not None: break
 
-                #     e_res = ocr.recognize_text(_img2, '提竿', end_threshold)
-                #     if e_res is not None:
-                #         if first_flag:
-                #             _img2.save('./images/tg.jpg')
-                #             end_threshold = e_res
-                #             first_flag = False
-                #             logger.info('end threshold: %d' % e_res)
-                #             logger.info('- Step 4 - 扫描完毕')
+        if pg_threshold is not None and tg_threshold is not None: break
 
-                #         else:
-                #             # 单击
-                #             mouse.click(_x, _y)
-                #             logger.info('click 提竿 x: %d, y: %d' % (e_res, _x, _y))
+    return pg_threshold, tg_threshold
 
-                #         break
+def _run(win, conf, click_x, click_y, location):
+    pg = conf.get('pg')
+    tg = conf.get('tg')
+        
+    pg_txt = pg.get('text')
+    tg_txt = tg.get('text')
+    tg_color = tg.get('color')
 
-                # if first_flag:
-                #     logger.info('- Step 4 - 扫描失败，请重试')
-                #     break
+    while True:
+        logger.info('wait 抛竿...')
+        _img = screen.capture(win, location)
 
+        logger.info('recognizing start ...')
+        res = ocr.recognize_text(_img, pg_txt, pg.get('threshold'))
+        logger.info('recognizing end ...')
+
+        if res == False:
             _wait(0.2)
+            continue
 
-    except Exception as e:
-        logger.error('[Error] ', traceback.format_exc())
+        # 点击抛竿
+        mouse.click(click_x, click_y)
+        logger.info('click 抛竿 x: %d, y: %d' % (click_x, click_y))
+
+        _times = 0
+        logger.info('wait 提竿...')
+        while True:
+            # 记录次数，超出 1分钟，约 600 次，跳出循环
+            if _times > 100: break
+            _times += 1
+
+            _img2 = screen.capture(win, location)
+
+            if ocr.recognize_color(_img2, tg_color) == False:
+                _wait(0.1)
+                continue
+
+            if ocr.recognize_text(_img2, '提竿', tg.get('threshold')):
+                mouse.click(click_x, click_y)
+                logger.info('click 提竿 x: %d, y: %d' % (click_x, click_y))
+                _wait(0.2)
+                break
 
 def _enter_line():
     print(' ')

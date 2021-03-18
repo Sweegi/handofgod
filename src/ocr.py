@@ -34,18 +34,12 @@ def _binarize(img, threshold):
 
 # 识别文字
 def recognize_text(img, txt, threshold):
-    res = None
     # 二值化
     _img_l = img.convert('L')
-    for i in range(threshold, 256):
-        _img = _binarize(_img_l, i)
-        text = pytesseract.image_to_string(_img, lang='chi_sim')
-        print(text)
-        if txt == text.strip():
-            res = i
-            break
+    _img = _binarize(_img_l, threshold)
 
-    return res
+    text = pytesseract.image_to_string(_img, lang='chi_sim')
+    return txt == text.strip()
 
 # 识别底色
 def recognize_color(img, rgb="152-179,188-231,95-128"):
@@ -67,7 +61,6 @@ def recognize_color(img, rgb="152-179,188-231,95-128"):
             # G 188-231
             # B 95-128
             if r1 <= r <= r2 and g1 <= g <= g2 and b1 <= b <= b2:
-                print('yes: rgb: ', r, g, b)
                 flag = True
                 break
 

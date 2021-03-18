@@ -6,7 +6,9 @@ Author Sweegi
 """
 import win32api, win32con
 
-def getClickLocation(start_x, start_y, end_x, end_y):
+def getClickLocation(location):
+    start_x, start_y, end_x, end_y = location
+
     x = (end_x - start_x) / 2 + start_x
     y = (start_y - end_y) / 2 + end_y
 

@@ -34,14 +34,14 @@ def set_window_to_top(win_obj):
     win32gui.SetForegroundWindow(win_obj)  #show window
 
 # 窗口识别区域捕获 
-def capture(win_obj, start_x, start_y, end_x, end_y):
+def capture(win_obj, bbox):
     # 置顶窗口
     set_window_to_top(win_obj)
     # 窗口大小
     r = win32gui.GetWindowRect(win_obj)
     left, top, right, bot = r
 
-    pic = ImageGrab.grab(bbox=(start_x, start_y, end_x, end_y))
+    pic = ImageGrab.grab(bbox=bbox)
     # pic.save('./images/orginal.jpg', quality=95, subsampling=0)
 
     return pic
