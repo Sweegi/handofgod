@@ -11,9 +11,9 @@ import traceback
 from threading import Thread
 from functools import partial
 
-import screen
 import ocr
 import mouse
+import screen
 from log import logger
 
 _CONF_FILE = "./ro.conf"
@@ -35,23 +35,22 @@ def start():
 
         win = {}
         # multi-process
-        title = 'RO'
-        repeat = conf.get('repeat')
         window_name = conf.get('window_name')
+        print(conf)
 
-        _func(window_name, title, repeat)
+        _func(window_name, conf)
     finally:
         _enter_line()
         logger.info('*** Over! ***')
         _wait(2)
         sys.exit(0)
 
-def _func(window_name, title, repeat):
+def _func(window_name, conf):
     try:
         # 游戏窗口
         _current_win = None
         
-        logger.info('- Step 1 - 选择当前 [%s] 窗口, 请输入 y or n :\n' % title)
+        logger.info('- Step 1 - 选择当前游戏窗口, 请输入 y or n :\n')
         winlist = screen.enum_windows(window_name)
         for w in winlist:
             k = input('   窗口名: %s > ' % w.get('title'))
@@ -69,38 +68,72 @@ def _func(window_name, title, repeat):
         _wait()
 
         screen.set_window_to_top(_current_win)
-
         sc = screen.CTkPrScrn() # absolute position for window
 
-        logger.info('- Step 3 - 开始扫描 ... ')
+        logger.info('- Step 3 - 开始扫描 ( 第一次识别比较耗时，请不要切换游戏视角或调整游戏窗口 ) ... ')
+
+        # 图片二值化步长初始值
+        start_threshold = 200
+        end_threshold = 240
+
+        # 初次识别标志位
+        first_flag = True 
+
+        # 点击位置
+        _x, _y = mouse.getClickLocation(sc.start_x, sc.start_y, sc.end_x, sc.end_y)
+
         while True:
-            # _img, _img_black = screen.capture(_current_win, sc.start_x, sc.start_y, sc.end_x, sc.end_y)
-            screen.set_window_to_top(_current_win)
+            logger.info('wait 抛竿...')
             _img = screen.capture(_current_win, sc.start_x, sc.start_y, sc.end_x, sc.end_y)
+            _img.save('./images/pg1.jpg')
 
-            for _, _conf in repeat.items():
-                try:
-                    _txt = _conf.get('text')
-                    if _txt:
-                        assert ocr.recognize_text(_img, _txt)
+            logger.info('recognizing start ...')
+            s_res = ocr.recognize_text(_img, '抛竿', start_threshold)
+            logger.info('recognizing end ...')
+            if s_res is not None:
+                # mouse.click(_x, _y)
+                logger.info('click 抛竿 x: %d, y: %d' % (_x, _y))
+                if first_flag:
+                    _img.save('./images/pg.jpg')
+                    # 更新抛竿二值化步长
+                    start_threshold = s_res
+                    logger.info('start threshold: %d' % s_res)
 
-                    '''
-                    if _ == 'end_fishing':
-                        _color = _conf.get('color')
-                        if _color:
-                            assert ocr.recognize_color(_img, _color)
-                    '''
+                # 记录次数，超出2分钟，约1200次，跳出循环
+                # _times = 0
+                # logger.info('wait 提竿...')
+                # while _times < 1200:
+                #     _times += 1
 
-                    _target, _action = _conf.get('action').split(':')
-                    if _target == 'mouse':
-                        _x, _y = mouse.getClickLocation(sc.start_x, sc.start_y, sc.end_x, sc.end_y)
-                        getattr(mouse, _action)(_x, _y)
-                        logger.info('%s %s' % (_action, _))
-                    else:
-                        logger.info('No Support for Action: %s' % _conf.get('action'))
-                except AssertionError as e:
-                    continue
-            _wait()
+                #     _img2 = screen.capture(_current_win, sc.start_x, sc.start_y, sc.end_x, sc.end_y)
+
+                #     _check_color = ocr.recognize_color(_img2, "152-179,188-231,95-128")
+                #     if _check_color == False:
+                #         _wait(0.1)
+                #         continue
+
+                #     e_res = ocr.recognize_text(_img2, '提竿', end_threshold)
+                #     if e_res is not None:
+                #         if first_flag:
+                #             _img2.save('./images/tg.jpg')
+                #             end_threshold = e_res
+                #             first_flag = False
+                #             logger.info('end threshold: %d' % e_res)
+                #             logger.info('- Step 4 - 扫描完毕')
+
+                #         else:
+                #             # 单击
+                #             mouse.click(_x, _y)
+                #             logger.info('click 提竿 x: %d, y: %d' % (e_res, _x, _y))
+
+                #         break
+
+                # if first_flag:
+                #     logger.info('- Step 4 - 扫描失败，请重试')
+                #     break
+
+            _wait(0.2)
+
     except Exception as e:
         logger.error('[Error] ', traceback.format_exc())
 

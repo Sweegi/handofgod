@@ -27,7 +27,6 @@ def enum_windows(name):
     return  winlist
 
 def get_window(win_dict):
-    print(win_dict)
     return win32gui.FindWindow(win_dict.get('clsname'), win_dict.get('title'))
 
 # 激活显示窗口，使其成为置顶活动窗口
@@ -36,33 +35,16 @@ def set_window_to_top(win_obj):
 
 # 窗口识别区域捕获 
 def capture(win_obj, start_x, start_y, end_x, end_y):
+    # 置顶窗口
+    set_window_to_top(win_obj)
     # 窗口大小
     r = win32gui.GetWindowRect(win_obj)
     left, top, right, bot = r
 
     pic = ImageGrab.grab(bbox=(start_x, start_y, end_x, end_y))
-    pic.save('orginal.jpg', quality=95, subsampling=0)
+    # pic.save('./images/orginal.jpg', quality=95, subsampling=0)
 
-    ocr_pic_fn = './new.jpg'
-    binarize(pic, ocr_pic_fn)
-
-    return ocr_pic_fn
-
-# 二值化
-def binarize(img, filename):
-    _img = img.convert('L')
-
-    threshold = 200
-
-    table = []
-    for i in range(256):
-        if i < threshold:
-            table.append(0)
-        else:
-            table.append(1)
-
-    _img_black = _img.point(table, '1')
-    _img_black.save(filename, quality=95, subsampling=0)
+    return pic
 
 class CTkPrScrn:
     def __init__(self, startX=0, startY=0):
