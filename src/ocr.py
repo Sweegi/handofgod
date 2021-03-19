@@ -32,6 +32,26 @@ def _binarize(img, threshold):
     _img = img.point(table, '1')
     return _img
 
+# 图片RGB均值
+def _rgb_mean_value(img):
+    pix = img.load()
+    width = img.size[0]
+    height = img.size[1]
+
+    count = width * height
+
+    _r_sum = 0
+    _g_sum = 0
+    _b_sum = 0
+    for x in range(width):
+        for y in range(height):
+            r, g, b = pix[x, y]
+            _r_sum += r
+            _g_sum += g
+            _b_sum += b
+
+    return int(_r_sum/count), int(_g_sum/count), int(_b_sum/count)
+
 # 识别文字
 def recognize_text(img, txt, threshold):
     # 二值化
@@ -70,6 +90,22 @@ def recognize_color(img, rgb="152-179,188-231,95-128"):
 
 if __name__ == '__main__':
 
-    start = time.time()
-    recognize_text(Image.open('E://handofgod/src/images/pg1.jpg'), '抛竿', 200)
-    print(time.time() - start)
+    images = [
+        # 'E://handofgod/src/example/tigan1.jpg',
+        # 'E://handofgod/src/example/tigan2.jpg',
+        # 'E://handofgod/src/images/tg.jpg',
+        # 'E://handofgod/src/images/pg.jpg',
+        # 'E://handofgod/src/images/no-black.jpg',
+        'E://handofgod/src/images/pg-w.jpg',
+        'E://handofgod/src/images/pg-w-no.jpg',
+        'E://handofgod/src/images/pg-w-no2.jpg',
+        'E://handofgod/src/images/pg-w-no3.jpg',
+    ]
+
+    for i in images:
+        start = time.time()
+        # recognize_text(Image.open('E://handofgod/src/images/pg1.jpg'), '抛竿', 200)
+        sum = _sum(Image.open(i))
+        print(i)
+        print('sum: ', sum)
+        print('cost times: ', time.time() - start)
